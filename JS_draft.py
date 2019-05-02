@@ -11,26 +11,24 @@ import threading as thd
 import time
 import datetime
 
-def create_MMR(KDA,time,win_perc):
-    pass
 
 def create_player():
     #ID, MMR, WaitingTime
-    Size = 1000
+    Size = 10000
     mu = 1120
     sigma = 425
     lower = 0
-    upper = 5000
+    upper = 3000
     # np.random.seed(0)
-    s  = np.random.normal(mu, sigma, Size)
-    # plt.hist(s, 30, normed=True)
+    X = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+    samples = X.rvs(Size)
+    # plt.hist(samples, bins=50, normed=True, alpha=0.3, label='histogram')
     # plt.show()
-
-    return s
+    return samples
 
 def create_entering_time():
     # Uniform distribution
-    Size = 1000
+    Size = 10000
     lower = 0
     upper = 600
     # np.random.seed(0)
@@ -39,18 +37,47 @@ def create_entering_time():
     # plt.show()
     return s
 
-# def create_match_pool(dic):
-#     start = time.time()
-#     # waiting_time_list = [0 for n in range(500)]
-#     dic = sorted(dic.items(),key = lambda item : item[1])
-#     print(dic)
-#     match_list = []
-#
-#
-#
-#     end = time.time()
-#     print (end - start)
-#     return match_list
+def create_dataframe(list, enter_time):
+    dic = {'MMR': list, 'enter_time': enter_time}
+    player_frame = pd.DataFrame(dic)
+    #players' waiting time
+    player_frame['wait_time'] = 0
+    #the times a player end a matchmaking
+    player_frame["times"] = 0
+    #the status of players, online is 1. offline is 0
+    player_frame['status'] = 1
+    return player_frame
+
+
+
+def match_begin(df):
+    game_time = 60
+    #generate result of a match
+    result = compute_win_lose(df)[0]
+    #determine if the player quits the game
+    df_new = compare_MMR(df, 200, result)
+    #generate new MMRs
+    df_new = compute_win_lose(df_new)[1]
+    # update the enter time
+    df_new['enter_time'] += game_time
+    #update the times of finishing a matchmaking
+    df_new['times'] += 1
+    return(df_new)
+
+
+def waiting_for_too_long(df):
+    #if player has been waiting for more than 60 seconds
+    for index, row in df.iterrows():
+        if row['wait_time']>60:
+            # 20% probability players quit the game
+            s = np.random.uniform(0,1)
+            if s < 0.2:
+                row['times'] += 1
+                row['status'] = 0
+    return df
+
+
+
 
 def compare_MMR(match_frame, rule, result):
     # Use some statistic ways to compute the comparison. Not just find the difference.
@@ -84,16 +111,52 @@ def compute_win_lose(match_frame):
         match_frame.iloc[1, 0] += 16 * (1 - Eb)
     return win_or_lose, match_frame
 
-def compute_waiting_time():
-    pass
 
-def main_simulation(player):
-    pass
+def match_making(df, MMR_range):
+    # find a time t1(interval)=5 to do the match
+    #
+
+    interval = 5
+    counter = interval
+    current_df = pd.DataFrame()
+    waitlist = df
+    while True:
+        waitlist = waitlist.sort_values(by="time", ascending=True)
+        # find players who would enter the matching pool before the given time point
+        current_df.append(waitlist[waitlist["time"] < counter])
+        current_df = current_df.sort_values(by="MMR", ascending=True)
+        # record the waiting time
+        current_df['wait_time'] += interval
+        counter += interval
+
+        # delet players who enter the pool from wait list
+        waitlist.drop(waitlist[waitlist["time"] < counter])
+        j = 0
+        while True:
+            if current_df[j + 1, 0] - current_df[j, 0] < MMR_range:
+                # match successfully
+                match_player = current_df.iloc[j:j + 1]
+                after_match = match_begin(match_player)
+                # mark players who enter a match
+                current_df.iloc[j:j + 1, 0] = ''
+                # players come back to wait list after they finish a match
+                waitlist = pd.concat([waitlist, after_match], ignore_index=True)
+            j += 1
+            if j + 1 > len(current_df) - 1:
+                # 遍历完成，删除进入过游戏的行,保留未匹配的玩家在data frame中，等待下一次匹配
+                # finish traversal, delete players who finish a match from current df, keep players who didn't enter a match, waiting for next matchmaking
+                current_df.drop(current_df['MMR'].isin(['']))
+                # if the time players wait for matchmaking is too long
+                current_df = waiting_for_too_long(current_df)
+                break
+        if counter > 600:
+            break
+    return df
 
 if __name__ == "__main__":
-    # list = create_player()
-    # enter_time  = create_entering_time()
-    # match_list = create_match_pool(player_dic)
+    list = create_player()
+    enter_time  = create_entering_time()
+    df = create_dataframe(list,enter_time)
     match_frame = pd.DataFrame([[2000, 60], [1500, 70]])
     result = compute_win_lose(match_frame)[0]
     print(result)
