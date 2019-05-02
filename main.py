@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from numpy.linalg import cholesky
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
@@ -8,6 +9,7 @@ from random import uniform
 import threading as thd
 import time
 import datetime
+from pandas import DataFrame
 
 def create_MMR(KDA,time,win_perc):
     pass
@@ -18,15 +20,15 @@ def create_player():
     mu = 1120
     sigma = 425
     lower = 0
-    upper = 5000
+    upper = 3000
     # np.random.seed(0)
-    s  = np.random.normal(mu, sigma, Size)
-    plt.hist(s, 30, normed=True)
-    plt.show()
+    X = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+    samples = X.rvs(Size)
+    # plt.hist(samples, bins=50, normed=True, alpha=0.3, label='histogram')
+    # plt.show()
+    return samples
 
-    return s
-
-def create_waiting_time(a):
+def create_waiting_time():
     # Uniform distribution
     Size = 10000
     lower = 0
@@ -37,28 +39,40 @@ def create_waiting_time(a):
     # plt.show()
     return s
 
-def create_match_pool(player_list, range):
-    start = time.time()
-    # waiting_time_list = [0 for n in range(500)]
-    match_list = []
+def create_dataframe(list, enter_time):
+    dic = {'MMR': list, 'time': enter_time}
+    player_frame = pd.DataFrame(dic)
+    return player_frame
 
-    for i in range(0,9999):
-        if player_list[i]:
-            for j in range(i+1,10000):
-                if player_list[j]:
-                    if player_list[j] > player_list[i] - range and player_list[j] < player_list[i] + range:
-                        match_list.append([player_list[i],player_list[j]])
-                        player_list[i] = None
-                        player_list[j] = None
-                        break
+def create_match_pool(df, MMR_range):
+    #find a time t1(interval)=5 to do the match
+    #
+    counter = 0
+    interval = 5
+    game_time = 60
+    waitlist = df.sort_values(by = "time",ascending=True)
+    match_list = []
+    for i in range(0,240):
+        counter += interval
+        current_df = waitlist[waitlist["time"]<counter].sort_values(by = "MMR", ascending=True)
+        # current_df = current_df
+
+        for j in range(0,len(current_df)-1):
+            if current_df.iloc[j,1]<=counter:
+                for m in range(j+1,len(current_df)):
+                    if current_df[m,1]<=counter:
+                        if current_df.iloc[m,0] > current_df.iloc[j,0] - MMR_range and current_df.iloc[m,0] < current_df.iloc[j,0] + MMR_range:
+                            match_list.append([current_df.iloc[j,0],current_df.iloc[m,0]])
+                            current_df.iloc[j,1] += game_time
+                            current_df.iloc[m,1] += game_time
+                            break
+                        else:
+                            continue
                     else:
                         continue
                 else:
                     continue
-        else:
-            continue
-    end = time.time()
-    print (end - start)
+
     return match_list
 
 def compare_MMR(match_list, range):
@@ -98,6 +112,7 @@ def main_simulation(player):
 
 if __name__ == "__main__":
     list = create_player()
-
-    match_list = create_match_pool(list)
-    print(match_list)
+    time = create_waiting_time()
+    df = create_dataframe(list,time)
+    pool = create_match_pool(df,200)
+    print(pool)
