@@ -13,7 +13,7 @@ def compute():
 
     for i in range(50, 300, 50):
         for j in range(1, 6):
-            filename = "result_" + i + "_"+j
+            filename = "result_" + i + "_"+j+".csv"
             data = pd.read_csv(filename)
             stays = data[data['status'] > 0]
             avg = data['MMR'].mean()
