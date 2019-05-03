@@ -131,6 +131,7 @@ def match_making(df, MMR_range):
             current_df['wait_time'] += interval
 
             # delet players who enter the pool from wait list
+            #删东西
             waitlist = waitlist[waitlist["enter_time"] >= counter]
             j = 0
             while True:
@@ -158,12 +159,13 @@ def match_making(df, MMR_range):
                     current_df = waiting_for_too_long(current_df)
                     break
             waitlist = pd.concat([waitlist,current_df[current_df['status'] == 0]], ignore_index=True)
-            current_df = current_df.loc[df.loc[:, "status"] < 1, :]
+            # 删东西
+            current_df = current_df.loc[df.loc[:, "status"] > 0, :]
             offline = pd.concat([offline, waitlist[waitlist['status'] == 0]],ignore_index=True)
             waitlist = waitlist[waitlist['status'] == 1]
             counter += interval
 
-    waitlist = pd.concat([waitlist, offline], ignore_index=True)
+    waitlist = pd.concat([waitlist, offline, current_df], ignore_index=True)
 
     return waitlist
 
