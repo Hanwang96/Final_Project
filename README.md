@@ -27,25 +27,25 @@ In this project, we focus on finding an appropriate MMR range rule for matchmaki
 - __Create online players__
 We suppose that in an online game, the level distribution of players follows a normal distribution. Thus, we generate 1000 players who are reprensented by their MMR rating. The range of MMR in this "game" is [0,3000]. The mu of normal distribution is 1125 and the sigma is 425, which is a wellknown distribution from famous game *DOTA2.
 
-- __Create enter time for players
+- __Create enter time for players__
 We suppose that all the players will login and join the match pool within 10 minutes which follows a uniform distribution. Thus, a uniform distribution U[0,600] is used to represented the second that a player join the match pool.
 
-- __Create dataframe
+- __Create dataframe__
 We save the information of players to a dataframe and sort it by enter time. It contains the MMR, enter time, how long they have waited for a match, the times of matches they took, the online/offline status, the average waiting time for a match.
 
-- __If a match begin
+- __If a match begin__
 The time of a match is set as 60 seconds. After a match, the MMR of two players will be updated based on the result (use another function to determine the result).
 
-- __If waiting time is too long
+- __If waiting time is too long__
 Players whose average waiting time are higher than 60 seconds will quit the game at 10% after each matchmaking.
 
-- __Compare MMR
+- __Compare MMR__
 If the difference of MMR of two players is too high, the loser will probably quit the game.
 
-- __Compute win or lose
+- __Compute win or lose__
 Use Elo equotation to compute the expected winning rate. Use a random number to represent to result.
 
-- __Matchmaking
+- __Matchmaking__
 Use a counter to count the time has passed and let the players whose enter time are lower than counter enter the match pool. Then create a small dataframe and sort it by MMR. We make the match every 5 seconds. If the first player can't be the opponent of the next player, the first player would be left and moved to next time of matchmaking.
 
 ## Result
