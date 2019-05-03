@@ -104,30 +104,7 @@ def compute_win_lose(enemy_list):
     new_MMR.append(enemy_list[1] + 16*(win_or_lose_B-Eb))
     return new_MMR
 
-def compute_waiting_time():
-    pass
 
-def main_simulation(player):
-    pass
-
-def MC_result_player(df):
-    stays = df[df['status']>0]
-    avg = df['MMR'].mean()
-    std = df['MMR'].std()
-    num_stays = len(stays)
-    return num_stays,avg,std
-
-def MC_result_MMR_avg(avg_list):
-    x = np.linspace(0, 400, 20)
-    y = avg_list
-    plt.figure()
-    plt.plot(x, y)
-
-def MC_result_MMR_std(std_list):
-    x = np.linspace(0, 400, 20)
-    y = std_list
-    plt.figure()
-    plt.plot(x, y)
 
 if __name__ == "__main__":
     list = create_player()
