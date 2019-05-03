@@ -12,15 +12,10 @@ import threading as thd
 import time
 import datetime
 import pylab
-# df = pd.DataFrame({'a':[1,2,3],'b':[1,2,3]})
+
+
+df = pd.DataFrame({'a':[1,2,3],'b':[1,2,3]})
+df2
 # df['a'] += 1
 # print(df)
 
-
-x = np.linspace(0, 6000, 1200)
-
-y = np.sin(x)
-a = plt.figure()
-a = plt.plot(x,y)
-a.show()
-# plt.savefig("easyplot.jpg")
