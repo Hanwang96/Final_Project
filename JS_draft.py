@@ -14,7 +14,7 @@ import datetime
 
 def create_player():
     #ID, MMR, WaitingTime
-    Size = 10000
+    Size = 500
     mu = 1120
     sigma = 425
     lower = 0
@@ -28,7 +28,7 @@ def create_player():
 
 def create_entering_time():
     # Uniform distribution
-    Size = 10000
+    Size = 500
     lower = 0
     upper = 600
     # np.random.seed(0)
@@ -55,7 +55,7 @@ def match_begin(df):
     #generate result of a match
     result = compute_win_lose(df)[0]
     #determine if the player quits the game
-    df_new = compare_MMR(df, 200, result)
+    df_new = compare_MMR(df, 50, result)
     #generate new MMRs
     df_new = compute_win_lose(df_new)[1]
     # update the enter time
@@ -91,11 +91,9 @@ def compare_MMR(match_frame, rule, result):
 
 def compute_win_lose(match_frame):
     Ea = 1/(1+10**((match_frame.iloc[1,0]-match_frame.iloc[0,0])/400))
-    print('e',Ea)
     Eb = 1-Ea
     # Create random (0,1). If this number < Ea, A will win.
     s = np.random.uniform(0, 1)
-    print('s',s)
     if s < Ea:
         # A win
         win_or_lose = 1
@@ -116,48 +114,56 @@ def match_making(df, MMR_range):
     current_df = pd.DataFrame()
     offline = pd.DataFrame()
     waitlist = df
-    while True:
+    while counter < 1200:
+        print('count',counter)
         waitlist = waitlist.sort_values(by="enter_time", ascending=True)
         # find players who would enter the matching pool before the given time point
+        print('waitlist',waitlist)
+        print('offline',offline)
         current_df = pd.concat([current_df,waitlist[waitlist["enter_time"] < counter]], ignore_index=True)
-        print(current_df)
-        current_df = current_df.sort_values(by="MMR", ascending=True)
-        # record the waiting time
-        current_df['wait_time'] += interval
-        counter += interval
+        if len(current_df) < 2:
+            counter += interval
+        else:
+            current_df = current_df.sort_values(by="MMR", ascending=True)
+            print('current_df', current_df)
+            # record the waiting time
+            current_df['wait_time'] += interval
 
-        # delet players who enter the pool from wait list
-        waitlist = waitlist[waitlist["enter_time"] >= counter]
-        j = 0
-        while True:
-            flag = False
-            if abs(current_df[j + 1, 0] - current_df[j, 0]) < MMR_range:
-                # match successfully
-                flag = True
-                match_player = current_df.iloc[j:j + 2]
-                print('match_player',match_player)
-                after_match = match_begin(match_player)
-                # mark players who enter a match
-                current_df.iloc[j:j + 2, 0] = None
-                # players come back to wait list after they finish a match
-                waitlist = pd.concat([waitlist, after_match], ignore_index=True)
-            if flag:
-                j += 2
-            else:
-                j += 1
-            if j + 1 > len(current_df) - 2:
-                # finish traversal, delete players who finish a match from current df, keep players who didn't enter a match, waiting for next matchmaking
-                current_df = current_df.dropna(axis = 0, how = 'any')
-                # if the time players wait for matchmaking is too long
-                current_df = waiting_for_too_long(current_df)
-                break
-        waitlist.append(current_df[['status'] == 0])
-        current_df = current_df.loc[df.loc[:, "status"] < 1, :]
-        offline.append(waitlist[['status'] == 0])
-        waitlist = waitlist[['status'] == 1]
-        if counter > 6000:
-            waitlist = pd.concat([waitlist, offline], ignore_index=True)
-            break
+            # delet players who enter the pool from wait list
+            waitlist = waitlist[waitlist["enter_time"] >= counter]
+            j = 0
+            while True:
+                flag = False
+                if abs(current_df.iloc[j + 1, 0] - current_df.iloc[j, 0]) < MMR_range:
+                    # match successfully
+                    flag = True
+                    match_player = current_df.iloc[j:j + 2]
+                    after_match = match_begin(match_player)
+                    print('after_match', after_match)
+                    # players come back to wait list after they finish a match
+                    waitlist = pd.concat([waitlist, after_match], ignore_index=True)
+                    # mark players who enter a match
+                    current_df.iloc[j:j + 2, 0] = None
+
+                if flag:
+                    j += 2
+                else:
+                    j += 1
+
+                if j + 1 > len(current_df) - 2:
+                    # finish traversal, delete players who finish a match from current df, keep players who didn't enter a match, waiting for next matchmaking
+                    current_df = current_df.dropna(axis = 0, how = 'any')
+                    # if the time players wait for matchmaking is too long
+                    current_df = waiting_for_too_long(current_df)
+                    break
+            waitlist = pd.concat([waitlist,current_df[current_df['status'] == 0]], ignore_index=True)
+            current_df = current_df.loc[df.loc[:, "status"] < 1, :]
+            offline = pd.concat([offline, waitlist[waitlist['status'] == 0]],ignore_index=True)
+            waitlist = waitlist[waitlist['status'] == 1]
+            counter += interval
+
+    waitlist = pd.concat([waitlist, offline], ignore_index=True)
+
     return waitlist
 
 
