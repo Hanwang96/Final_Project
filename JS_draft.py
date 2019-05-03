@@ -3,8 +3,6 @@ import pandas as pd
 from scipy.stats import truncnorm
 import time
 
-
-
 def create_player():
     #ID, MMR, WaitingTime
     Size = 1000
@@ -38,7 +36,7 @@ def create_dataframe(list, enter_time):
     #the times a player end a matchmaking
     player_frame["times"] = 0
     #the status of players, online is 1. offline is 0
-    player_frame['status'] = 1
+    player_frame['status'] = 2
     # player's waiting time in every matchmaking
     player_frame['every_wait_time'] = 0
     return player_frame
@@ -50,7 +48,7 @@ def match_begin(df):
     #generate result of a match
     result = compute_win_lose(df)[0]
     #determine if the player quits the game
-    df_new = compare_MMR(df, 50, result)
+    df_new = compare_MMR(df, result)
     #generate new MMRs
     df_new = compute_win_lose(df_new)[1]
     # update the enter time
@@ -62,26 +60,31 @@ def match_begin(df):
 
 def waiting_for_too_long(df):
     #if player has been waiting for more than 60 seconds
-    for index, row in df.iterrows():
-        if row['every_wait_time']>60:
-            # 20% probability players quit the game
+    for i in range(len(df)):
+        # 15% probability players quit the game
+        if df.iat[i,5]>60:
             s = np.random.uniform(0,1)
-            if s < 0.2:
-                row['times'] += 1
-                row['status'] = 0
+            if s < 0.15:
+                df.iat[i,3] += 1
+                df.iat[i,4] = 0
+                print('time off!')
+    print('df',df)
     return df
 
-def compare_MMR(match_frame, rule, result):
+def compare_MMR(match_frame, result):
     # Use some statistic ways to compute the comparison. Not just find the difference.
-    diff = abs(match_frame.iloc[0,0] - match_frame.iloc[1,0])
+    diff = match_frame.iat[0,0] - match_frame.iat[1,0]
+    if diff < 0:
+        base = match_frame.iat[1,0]
+    else:
+        base = match_frame.iat[0,0]
     s = np.random.uniform(0,1)
-    print(s)
-    if diff > 0.7 * rule:
+    if abs(diff)/base > 0.05:
         if s < 0.2:
             if result:
-                match_frame.iat[1,4] = 0
+                match_frame.iat[1,4] = 1
             else:
-                match_frame.iat[0,4] = 0
+                match_frame.iat[0,4] = 1
     return match_frame
 
 def compute_win_lose(match_frame):
@@ -113,18 +116,15 @@ def match_making(df, MMR_range):
     current_df = pd.DataFrame()
     offline = pd.DataFrame()
     waitlist = df
-    while counter < 300:
-        print('count',counter)
+
+    while counter < 1200:
         waitlist = waitlist.sort_values(by="enter_time", ascending=True)
         # find players who would enter the matching pool before the given time point
-        print('waitlist',waitlist)
-        print('offline',offline)
         current_df = pd.concat([current_df,waitlist[waitlist["enter_time"] < counter]], ignore_index=True)
         if len(current_df) < 2:
             counter += interval
         else:
             current_df = current_df.sort_values(by="MMR", ascending=True)
-            print('current_df', current_df)
             # record the waiting time
             current_df['wait_time'] += interval
             current_df['every_wait_time'] += interval
@@ -139,7 +139,6 @@ def match_making(df, MMR_range):
                     flag = True
                     match_player = current_df.iloc[j:j + 2]
                     after_match = match_begin(match_player)
-                    print('after_match', after_match)
                     after_match['every_wait_time'] = 0
                     # players come back to wait list after they finish a match
                     waitlist = pd.concat([waitlist, after_match], ignore_index=True)
@@ -156,11 +155,12 @@ def match_making(df, MMR_range):
                     current_df = current_df.dropna(axis = 0, how = 'any')
                     # if the time players wait for matchmaking is too long
                     current_df = waiting_for_too_long(current_df)
+                    print('current',current_df)
                     break
-            waitlist = pd.concat([waitlist,current_df[current_df['status'] == 0]], ignore_index=True)
-            current_df = current_df.loc[df.loc[:, "status"] > 0, :]
-            offline = pd.concat([offline, waitlist[waitlist['status'] == 0]],ignore_index=True)
-            waitlist = waitlist[waitlist['status'] == 1]
+            waitlist = pd.concat([waitlist,current_df[current_df['status'] < 2]], ignore_index=True)
+            current_df = current_df.loc[current_df.loc[:, "status"] > 1, :]
+            offline = pd.concat([offline, waitlist[waitlist['status'] <2]],ignore_index=True)
+            waitlist = waitlist[waitlist['status'] == 2]
             counter += interval
 
     waitlist = pd.concat([waitlist, offline, current_df], ignore_index=True)
@@ -175,15 +175,10 @@ if __name__ == "__main__":
     list = create_player()
     enter_time  = create_entering_time()
     df = create_dataframe(list,enter_time)
-
-    # for i in range(20,400,20):
-    #     df_new = match_making(df,i)
-    df_new = match_making(df,100)
+    df_new = match_making(df,250)
     save_site(df_new)
     time2 = time.time()
     print(time2-time1)
 
 
-
-    # print(match_list)
 
