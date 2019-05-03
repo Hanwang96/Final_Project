@@ -76,9 +76,6 @@ def waiting_for_too_long(df):
                 row['status'] = 0
     return df
 
-
-
-
 def compare_MMR(match_frame, rule, result):
     # Use some statistic ways to compute the comparison. Not just find the difference.
     diff = abs(match_frame.iloc[0,0] - match_frame.iloc[1,0])
@@ -87,9 +84,9 @@ def compare_MMR(match_frame, rule, result):
     if diff > 0.7 * rule:
         if s < 0.2:
             if result:
-                match_frame = match_frame.drop(index = 1, inplace = False)
+                match_frame.iloc[1,4] = 0
             else:
-                match_frame = match_frame.drop(index = 0, inplace = False)
+                match_frame.iloc[0,4] = 0
     return match_frame
 
 def compute_win_lose(match_frame):
@@ -114,54 +111,66 @@ def compute_win_lose(match_frame):
 
 def match_making(df, MMR_range):
     # find a time t1(interval)=5 to do the match
-    #
-
     interval = 5
     counter = interval
     current_df = pd.DataFrame()
+    offline = pd.DataFrame()
     waitlist = df
     while True:
-        waitlist = waitlist.sort_values(by="time", ascending=True)
+        waitlist = waitlist.sort_values(by="enter_time", ascending=True)
         # find players who would enter the matching pool before the given time point
-        current_df.append(waitlist[waitlist["time"] < counter])
+        current_df = pd.concat([current_df,waitlist[waitlist["enter_time"] < counter]], ignore_index=True)
+        print(current_df)
         current_df = current_df.sort_values(by="MMR", ascending=True)
         # record the waiting time
         current_df['wait_time'] += interval
         counter += interval
 
         # delet players who enter the pool from wait list
-        waitlist.drop(waitlist[waitlist["time"] < counter])
+        waitlist = waitlist[waitlist["enter_time"] >= counter]
         j = 0
         while True:
-            if current_df[j + 1, 0] - current_df[j, 0] < MMR_range:
+            flag = False
+            if abs(current_df[j + 1, 0] - current_df[j, 0]) < MMR_range:
                 # match successfully
-                match_player = current_df.iloc[j:j + 1]
+                flag = True
+                match_player = current_df.iloc[j:j + 2]
+                print('match_player',match_player)
                 after_match = match_begin(match_player)
                 # mark players who enter a match
-                current_df.iloc[j:j + 1, 0] = ''
+                current_df.iloc[j:j + 2, 0] = None
                 # players come back to wait list after they finish a match
                 waitlist = pd.concat([waitlist, after_match], ignore_index=True)
-            j += 1
-            if j + 1 > len(current_df) - 1:
-                # 遍历完成，删除进入过游戏的行,保留未匹配的玩家在data frame中，等待下一次匹配
+            if flag:
+                j += 2
+            else:
+                j += 1
+            if j + 1 > len(current_df) - 2:
                 # finish traversal, delete players who finish a match from current df, keep players who didn't enter a match, waiting for next matchmaking
-                current_df.drop(current_df['MMR'].isin(['']))
+                current_df = current_df.dropna(axis = 0, how = 'any')
                 # if the time players wait for matchmaking is too long
                 current_df = waiting_for_too_long(current_df)
                 break
-        if counter > 600:
+        waitlist.append(current_df[['status'] == 0])
+        current_df = current_df.loc[df.loc[:, "status"] < 1, :]
+        offline.append(waitlist[['status'] == 0])
+        waitlist = waitlist[['status'] == 1]
+        if counter > 6000:
+            waitlist = pd.concat([waitlist, offline], ignore_index=True)
             break
-    return df
+    return waitlist
+
+
+
 
 if __name__ == "__main__":
     list = create_player()
     enter_time  = create_entering_time()
     df = create_dataframe(list,enter_time)
-    match_frame = pd.DataFrame([[2000, 60], [1500, 70]])
-    result = compute_win_lose(match_frame)[0]
-    print(result)
-    print(compare_MMR(match_frame,200,result))
 
+    # for i in range(20,400,20):
+    #     df_new = match_making(df,i)
+    print( match_making(df,100))
 
     # print(match_list)
 
