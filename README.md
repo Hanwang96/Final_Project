@@ -52,7 +52,7 @@ Use a counter to count the time has passed and let the players whose enter time 
 We chose different ranges of MMR (5,10,20,30,40,50,75,100,250,400) and ran each MMR three times. We made plots of those results.
 
 ![mu_MMR](charts/mu_MMR.png)
-!Sigma_MMR](charts/Sigma_MMR.png)
+![Sigma_MMR](charts/Sigma_MMR.png)
 
 From our simulation, we can find that the distribution of MMR did not changed too much after 600 times matchmaking. The mu and sigma were not affected a lot by them. That proves our matchmaking algorithms and elo rating system work well.
 
