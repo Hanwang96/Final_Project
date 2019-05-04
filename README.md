@@ -12,7 +12,7 @@ It also offers a special internal rating system used for matchmaking, in which s
 
 The MMR score is calculated by the Elo rating system, which is widely used in master-level chess game and many video games such as Hearthstone. Below is the basic formula:
 
-𝑃𝑒𝑟𝑓𝑜𝑟𝑚𝑎𝑛𝑐𝑒 𝑟𝑎𝑡𝑖𝑛𝑔=(𝑇𝑜𝑡𝑎𝑙 𝑜𝑓 𝑜𝑝𝑝𝑜𝑛𝑒𝑛𝑡𝑠^′ 𝑟𝑎𝑡𝑖𝑛𝑔+400∗(𝑊𝑖𝑛𝑠−𝐿𝑜𝑠𝑠𝑒𝑠))/𝐺𝑎𝑚𝑒𝑠
+![elo rating system](elo rating system.png)
 After a match, this formula would generate the new MMRs.
 
 ## Assumption and Hypothesis
@@ -52,8 +52,13 @@ Use a counter to count the time has passed and let the players whose enter time 
 We chose different ranges of MMR (5,10,20,30,40,50,75,100,250,400) and ran each MMR three times. We made plots of those results.
 
 ![mu_MMR](charts/mu_MMR.png)
+!Sigma_MMR](charts/Sigma_MMR.png)
 
 From our simulation, we can find that the distribution of MMR did not changed too much after 600 times matchmaking. The mu and sigma were not affected a lot by them. That proves our matchmaking algorithms and elo rating system work well.
+
+![Number_Player_online](charts/Number_Player_online.png)
+![Quit_game_bad_experience](charts/Quit_game_bad_experience.png)
+![Quit_game_waiting_time](charts/Quit_game_waiting_time.png)
 
 Besides, results show that when the range of MMR is in [0,100], a tiny increase will affect the numbers of online players a lot. After 100, the change of MMR does not affect a lot. Even we increase the range of MMR, the number of online players reach the peak.
 
