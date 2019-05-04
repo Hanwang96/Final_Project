@@ -49,7 +49,13 @@ Use Elo equotation to compute the expected winning rate. Use a random number to 
 Use a counter to count the time has passed and let the players whose enter time are lower than counter enter the match pool. Then create a small dataframe and sort it by MMR. We make the match every 5 seconds. If the first player can't be the opponent of the next player, the first player would be left and moved to next time of matchmaking.
 
 ## Result
-We chose five range of MMR (50,100,150,200,250) and ran each MMR four times. We made plots of those results.
+We chose different ranges of MMR (5,10,20,30,40,50,75,100,250,400) and ran each MMR three times. We made plots of those results.
+
+From our simulation, we can find that the distribution of MMR did not changed too much after 600 times matchmaking. The mu and sigma were not affected a lot by them. That proves our matchmaking algorithms and elo rating system work well.
+
+Besides, results show that when the range of MMR is in [0,100], a tiny increase will affect the numbers of online players a lot. After 100, the change of MMR does not affect a lot. Even we increase the range of MMR, the number of online players reach the peak.
+
+Therefore, the best range of MMR in our simulation is around 100.
 
 ## Files
 - __main.py__
