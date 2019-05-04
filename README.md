@@ -12,7 +12,7 @@ It also offers a special internal rating system used for matchmaking, in which s
 
 The MMR score is calculated by the Elo rating system, which is widely used in master-level chess game and many video games such as Hearthstone. Below is the basic formula:
 
-![elo rating system](elo rating system.png)
+![elo rating system](elo_rating_system.png)
 After a match, this formula would generate the new MMRs.
 
 ## Assumption and Hypothesis
